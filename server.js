@@ -10,10 +10,18 @@ import cookieParser from "cookie-parser";
 import { createClient } from "redis";
 import { notfound, errorHandler } from "./middleware/ErrorHander.js";
 import Razorpay from "razorpay";
+import cors from "cors";
 dotenv.config();
 connectDB();
 
 const app = express();
+
+app.use(
+    cors({
+        origin: "https://ri-store-frontend.vercel.app",
+        credentials: true,
+    })
+);
 
 app.use(morgan("dev"));
 
@@ -25,45 +33,49 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const client = createClient({
-	password: process.env.REDIS_PASSWORD,
-	socket: {
-		host: process.env.REDIS_HOST,
-		port: process.env.REDIS_PORT,
-	},
+    password: process.env.REDIS_PASSWORD,
+    socket: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT,
+    },
 });
 
 client.on("error", (err) => {
-	console.error("Redis client error:", err);
+    console.error("Redis client error:", err);
 });
 
 client.on("connect", () => {
-	console.log("Connected to Redis");
+    console.log("Connected to Redis");
 });
 
 const initializeRedis = async () => {
-	try {
-		await client.connect();
-		console.log("Redis connection established");
+    try {
+        await client.connect();
+        console.log("Redis connection established");
 
-		await client.set("test-key", "apple");
-		console.log("Set test-key");
+        await client.set("test-key", "apple");
+        console.log("Set test-key");
 
-		const value = await client.get("test-key");
-		console.log("Value of test-key:", value);
-	} catch (err) {
-		console.error("Error with Redis operations:", err);
-	}
+        const value = await client.get("test-key");
+        console.log("Value of test-key:", value);
+    } catch (err) {
+        console.error("Error with Redis operations:", err);
+    }
 };
 
 initializeRedis();
 
 export const instance = new Razorpay({
-	key_id: process.env.RAZORPAY_KEY_ID,
-	key_secret: process.env.RAZORPAY_KEY_SECRET,
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 app.get("/", (req, res) => {
-	res.send("Hello world from backend");
+    const host = req.get("host"); // Get the hostname
+    const protocol = req.protocol; // Get the protocol (http or https)
+    const fullUrl = `${protocol}://${host}`; // Combine protocol and host
+    console.log(`Backend is live at: ${fullUrl}`);
+    res.send(`Hello world from backend and it is running on port ${fullUrl}`);
 });
 
 app.use("/api/products", ProductRoute);
@@ -77,7 +89,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-	console.log(`Backend is running on ${PORT}. Try http://localhost:${PORT}`);
+    console.log(`Backend is running on ${PORT}.`);
 });
 
 export { client };
