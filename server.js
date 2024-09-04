@@ -18,7 +18,17 @@ const app = express();
 
 app.use(
     cors({
-        origin: "https://ri-store-frontend.vercel.app",
+        origin: function (origin, callback) {
+            const allowedOrigins = [
+                "https://ri-store-frontend.vercel.app",
+                "http://localhost:3000",
+            ];
+            if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         credentials: true,
     })
 );
